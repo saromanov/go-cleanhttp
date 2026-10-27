@@ -36,7 +36,11 @@ func DefaultPooledTransport() *http.Transport {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		// Connections do not pin a CPU, so the value derived from
+		// GOMAXPROCS has a floor to avoid connection churn when a modest
+		// number of goroutines concurrently request the same host on a
+		// low-CPU machine. See https://github.com/hashicorp/go-cleanhttp/issues/15
+		MaxIdleConnsPerHost: max(runtime.GOMAXPROCS(0)+1, 5),
 	}
 	return transport
 }
